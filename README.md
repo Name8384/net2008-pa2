@@ -13,3 +13,7 @@ python pa2.py DEVICES.xml POLICY.yaml
 ## Requirements
 - Python 3
 - PyYAML 
+
+## Output
+
+audit.json contains device counts, interface counts, compliance violations, and compliant devices.
