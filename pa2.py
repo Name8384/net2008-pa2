@@ -120,11 +120,19 @@ def main():
             sys.exit(1)
 
         if "min_os" in policy:
-            
+
+            if not isinstance(policy["min_os"], dict):
+
+                raise PolicyError("min_os must be a dictionary")
+
             for role, version in policy["min_os"].items():
-                
+
+                if not isinstance(role, str):
+
+                    raise PolicyError("OS roles must be strings")
+
                 if not valid_version(version):
-                    
+
                     raise PolicyError("Invalid OS version for role: " + role)
 
         if "require_owner" in policy and not isinstance(policy["require_owner"], bool):
@@ -194,7 +202,7 @@ def main():
 
         owner = device.owner
 
-        # If device does not have a role add 1 , count it as skipped and continue.
+        # If device does not have an id add 1 , if there is no id count it as skipped and continue.
 
         if device_id is None:
 
@@ -222,8 +230,6 @@ def main():
 
         for interface in interfaces:
 
-            device_interface = interface.get("name")
-
             interface_status = interface.get("status")
 
             if interface_status == "up":
@@ -237,6 +243,7 @@ def main():
                 down_count += 1
 
             else:
+
                 interfaces_count["other"] += 1
 
         max_down = policy.get("max_down_interfaces")
@@ -260,11 +267,23 @@ def main():
                     "type": "unknown_role",
                     "role": device_role
                 })
-
+        
             else:
+                
                 minimum_os = policy["min_os"].get(device_role)
 
-                if compare_versions(device_os, minimum_os):
+                if not valid_version(device_os):
+
+                    print(device_id, "OS outdated")
+
+                    violations.append({
+                        "device": device_id,
+                        "type": "os_outdated",
+                        "found": device_os,
+                        "required": minimum_os
+                    })
+
+                elif compare_versions(device_os, minimum_os):
 
                     print(device_id, "OS compliant")
 
@@ -281,7 +300,7 @@ def main():
 
         if policy.get("require_owner"):
 
-             if owner is None or owner.text is None or owner.text.strip() == "":
+            if owner is None or owner.text is None or owner.text.strip() == "":
 
                 violations.append({
                     "device": device_id,
@@ -294,10 +313,10 @@ def main():
 
         has_violation = any(
 
-        violation["device"] == device_id
+            violation["device"] == device_id
 
-        for violation in violations
-        )   
+            for violation in violations
+        )
         
         if not has_violation:
 
@@ -335,7 +354,7 @@ def main():
     
     with open("audit.json", "w") as file:
     
-         json.dump(audit_report, file, indent=4)
+        json.dump(audit_report, file, indent=4)
 
     
         
